@@ -70,6 +70,13 @@ func main() {
 	defer waitForCalled()
 
 	// global middleware
+	xFrameOptionsMiddleware := func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+			next(w, r)
+		}
+	}
+	server.Use(xFrameOptionsMiddleware)
 	server.Use(auth.AuthMiddlewareWithCtx(svcCtx))
 	server.Use(rest.ToMiddleware(middleware.ReserveRequest(middleware.ReserveRequestConfig{
 		Skipper: func(r *http.Request) bool {

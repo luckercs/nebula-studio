@@ -23,6 +23,7 @@ func AssetsMiddlewareWithCtx(svcCtx *svc.ServiceContext, embedAssets fs.FS) http
 			}
 
 			w.Header().Set("Content-Type", "text/html")
+			w.Header().Set("X-Frame-Options","SAMEORIGIN")
 			w.WriteHeader(http.StatusOK)
 			tpl.Execute(w, map[string]any{"appInstance": svcCtx.Config.AppInstance})
 			return
@@ -36,6 +37,7 @@ func AssetsMiddlewareWithCtx(svcCtx *svc.ServiceContext, embedAssets fs.FS) http
 		// if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") && !strings.Contains(r.Header.Get("Accept"), "image/") {
 		// 	w.Header().Set("Content-Encoding", "gzip")
 		// }
+		w.Header().Set("X-Frame-Options","SAMEORIGIN")
 		handler.ServeHTTP(w, r)
 	})
 }
