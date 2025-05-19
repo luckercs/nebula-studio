@@ -70,6 +70,8 @@ func main() {
 	defer waitForCalled()
 
 	// global middleware
+	clickjackingMiddleware := handler.NewClickjackingMiddleware()
+	server.Use(clickjackingMiddleware.Handle)
 	server.Use(auth.AuthMiddlewareWithCtx(svcCtx))
 	server.Use(rest.ToMiddleware(middleware.ReserveRequest(middleware.ReserveRequestConfig{
 		Skipper: func(r *http.Request) bool {
