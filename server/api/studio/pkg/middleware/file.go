@@ -1,9 +1,12 @@
 package utils
 
 import (
+	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/vesoft-inc/go-pkg/middleware"
@@ -26,6 +29,37 @@ func AssetsMiddlewareWithCtx(svcCtx *svc.ServiceContext, embedAssets fs.FS) http
 			w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			w.Header().Set("X-XSS-Protection", "1; mode=block")
+
+			allowedHosts := []string{}
+			ips, err := utils.GetAllIPAddresses()
+			if err != nil {
+				fmt.Println("[error] get ip address error: %v", err)
+			} else {
+				allowedHosts = append(allowedHosts, ips...)
+			}
+			hostname, err := utils.GetHostname()
+			if err != nil {
+				fmt.Println("[error] get hostname error: %v", err)
+			} else {
+				allowedHosts = append(allowedHosts, hostname)
+			}
+			if customDomain := os.Getenv("ALLOWED_DOMAIN"); customDomain != "" {
+				allowedHosts = append(allowedHosts, customDomain)
+			}
+
+			allowedHostMap := make(map[string]struct{})
+			for _, host := range allowedHosts {
+				allowedHostMap[strings.ToLower(host)] = struct{}{}
+			}
+			host := strings.ToLower(r.Host)
+			if idx := strings.Index(host, ":"); idx != -1 {
+				host = host[:idx]
+			}
+			if _, ok := allowedHostMap[host]; !ok {
+				http.Error(w, "Invalid Host header", http.StatusBadRequest)
+				return
+			}
+
 			w.WriteHeader(http.StatusOK)
 			tpl.Execute(w, map[string]any{"appInstance": svcCtx.Config.AppInstance})
 			return
@@ -42,6 +76,37 @@ func AssetsMiddlewareWithCtx(svcCtx *svc.ServiceContext, embedAssets fs.FS) http
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-XSS-Protection", "1; mode=block")
+
+		allowedHosts := []string{}
+		ips, err := utils.GetAllIPAddresses()
+		if err != nil {
+			fmt.Println("[error] get ip address error: %v", err)
+		} else {
+			allowedHosts = append(allowedHosts, ips...)
+		}
+		hostname, err := utils.GetHostname()
+		if err != nil {
+			fmt.Println("[error] get hostname error: %v", err)
+		} else {
+			allowedHosts = append(allowedHosts, hostname)
+		}
+		if customDomain := os.Getenv("ALLOWED_DOMAIN"); customDomain != "" {
+			allowedHosts = append(allowedHosts, customDomain)
+		}
+
+		allowedHostMap := make(map[string]struct{})
+		for _, host := range allowedHosts {
+			allowedHostMap[strings.ToLower(host)] = struct{}{}
+		}
+		host := strings.ToLower(r.Host)
+		if idx := strings.Index(host, ":"); idx != -1 {
+			host = host[:idx]
+		}
+		if _, ok := allowedHostMap[host]; !ok {
+			http.Error(w, "Invalid Host header", http.StatusBadRequest)
+			return
+		}
+
 		handler.ServeHTTP(w, r)
 	})
 }
