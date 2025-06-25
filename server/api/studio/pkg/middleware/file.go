@@ -60,6 +60,11 @@ func AssetsMiddlewareWithCtx(svcCtx *svc.ServiceContext, embedAssets fs.FS) http
 				return
 			}
 
+			if strings.HasSuffix(r.URL.Path, ".map") {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				return
+			}
+
 			w.WriteHeader(http.StatusOK)
 			tpl.Execute(w, map[string]any{"appInstance": svcCtx.Config.AppInstance})
 			return
@@ -104,6 +109,11 @@ func AssetsMiddlewareWithCtx(svcCtx *svc.ServiceContext, embedAssets fs.FS) http
 		}
 		if _, ok := allowedHostMap[host]; !ok {
 			http.Error(w, "Invalid Host header", http.StatusBadRequest)
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, ".map") {
+			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
 

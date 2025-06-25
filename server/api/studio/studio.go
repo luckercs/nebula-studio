@@ -108,6 +108,11 @@ func main() {
 				return
 			}
 
+			if strings.HasSuffix(r.URL.Path, ".map") {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				return
+			}
+
 			next(w, r)
 		}
 	}
