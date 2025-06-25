@@ -113,6 +113,17 @@ func main() {
 				return
 			}
 
+			w.Header().Set("Content-Security-Policy",
+				"default-src 'self'; "+
+					"script-src 'self' 'unsafe-inline' 'unsafe-eval'; "+
+					"style-src 'self' 'unsafe-inline' 'unsafe-eval'; "+
+					"img-src 'self' data:; "+
+					"connect-src 'self'; "+
+					"font-src 'self'; "+
+					"frame-ancestors 'none'; "+
+					"base-uri 'self'; "+
+					"form-action 'self'")
+
 			next(w, r)
 		}
 	}
