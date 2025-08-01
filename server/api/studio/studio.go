@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/vesoft-inc/go-pkg/middleware"
 	"github.com/vesoft-inc/nebula-studio/server/api/studio/internal/config"
@@ -55,7 +56,7 @@ func main() {
 
 	svcCtx := svc.NewServiceContext(c)
 	opts := []rest.RunOption{
-		rest.WithNotFoundHandler(studioMiddleware.AssetsMiddlewareWithCtx(svcCtx, embedAssets)),
+		rest.WithNotFoundHandler(studioMiddleware.AssetsMiddlewareWithCtx(svcCtx, embedAssets, c.EnableSecurityHeader)),
 	}
 	if len(c.CorsOrigins) > 0 {
 		opts = append(opts, rest.WithCors(c.CorsOrigins...))
@@ -70,6 +71,36 @@ func main() {
 	defer waitForCalled()
 
 	// global middleware
+	if c.EnableSecurityHeader {
+		fmt.Println("Enable security header")
+		xFrameOptionsMiddleware := func(next http.HandlerFunc) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+				w.Header().Set("X-Content-Type-Options", "nosniff")
+				w.Header().Set("X-XSS-Protection", "1; mode=block")
+
+				if strings.HasSuffix(r.URL.Path, ".map") {
+					http.Error(w, "Forbidden", http.StatusForbidden)
+					return
+				}
+
+				w.Header().Set("Content-Security-Policy",
+					"default-src 'self'; "+
+						"script-src 'self' 'unsafe-inline' 'unsafe-eval'; "+
+						"style-src 'self' 'unsafe-inline' 'unsafe-eval'; "+
+						"img-src 'self' data:; "+
+						"connect-src 'self'; "+
+						"font-src 'self'; "+
+						"frame-ancestors 'none'; "+
+						"base-uri 'self'; "+
+						"form-action 'self'")
+
+				next(w, r)
+			}
+		}
+		server.Use(xFrameOptionsMiddleware)
+	}
+
 	server.Use(auth.AuthMiddlewareWithCtx(svcCtx))
 	server.Use(rest.ToMiddleware(middleware.ReserveRequest(middleware.ReserveRequestConfig{
 		Skipper: func(r *http.Request) bool {

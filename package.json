@@ -12,7 +12,7 @@
     "start": "vite",
     "dev": "vite",
     "dev:go": "cd server/api/studio && make run",
-    "build": "tsc && vite build",
+    "build": "tsc && NODE_ENV=production vite build --sourcemap=false",
     "preview": "vite preview",
     "postinstall": "husky install"
   },

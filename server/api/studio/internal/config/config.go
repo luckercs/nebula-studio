@@ -37,7 +37,8 @@ type Config struct {
 	Debug       struct {
 		Enable bool
 	}
-	Auth struct {
+	EnableSecurityHeader bool `json:",optional,default=false"`
+	Auth               struct {
 		TokenName    string
 		AccessSecret string
 		AccessExpire int64
