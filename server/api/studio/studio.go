@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"embed"
 	"flag"
 	"fmt"
@@ -60,6 +61,22 @@ func main() {
 	}
 	if len(c.CorsOrigins) > 0 {
 		opts = append(opts, rest.WithCors(c.CorsOrigins...))
+	}
+
+	if c.EnableSecurityHeader && c.RestConf.CertFile != "" && c.RestConf.KeyFile != "" {
+		fmt.Println("Disable TLS 1.0/1.1 and enforce secure cipher suites")
+		customTLS := &tls.Config{
+			MinVersion:               tls.VersionTLS12,
+			PreferServerCipherSuites: true,
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			},
+		}
+		opts = append(opts, rest.WithTLSConfig(customTLS))
 	}
 
 	server := rest.MustNewServer(c.RestConf, opts...)
